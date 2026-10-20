@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ course.name }}</h2>
+<p>{{ course.description }}</p>
+<p>Pengajar: {{ course.teacher.username }}</p>
+<p>Harga: Rp {{ course.price }}</p>
+<a href="/course/{{ course.id }}/join/" class="btn btn-success">Join Course</a>
+{% endblock %}

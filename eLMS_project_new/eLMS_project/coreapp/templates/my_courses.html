@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Matkul Saya</h2>
+<ul>
+  {% for m in memberships %}
+    <li>{{ m.course_id.name }} - {{ m.roles }}</li>
+  {% empty %}
+    <li>Belum mengikuti matkul apapun.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

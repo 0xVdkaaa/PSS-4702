@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Konten: {{ course.name }}</h2>
+<ul>
+  {% for cont in contents %}
+    <li><a href="/content/{{ cont.id }}/">{{ cont.name }}</a></li>
+  {% empty %}
+    <li>Tidak ada konten.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

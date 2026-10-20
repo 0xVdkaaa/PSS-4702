@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ content.name }}</h2>
+<p>{{ content.description }}</p>
+<h4>Komentar</h4>
+<ul>
+  {% for k in comments %}
+    <li>{{ k.member_id.user_id.username }}: {{ k.comment }}</li>
+  {% empty %}
+    <li>Belum ada komentar.</li>
+  {% endfor %}
+</ul>
+{% if user.is_authenticated %}
+  <form method="post" action="/content/{{ content.id }}/comment/">{% csrf_token %}
+    <textarea name="comment" class="form-control" rows="3"></textarea>
+    <button class="btn btn-primary mt-2">Kirim</button>
+  </form>
+{% else %}
+  <p><a href="/admin/login/">Login</a> untuk berkomentar.</p>
+{% endif %}
+{% endblock %}
