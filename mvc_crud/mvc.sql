@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `mahasiswa` (
 --
 
 INSERT INTO `mahasiswa` (`nim`, `nama`, `angkatan`, `fakultas`, `program`) VALUES
-('1101234', 'Eva Nursamsi', '2011', 'Pendidikan Matematika dan Pengetahuan Alam', 'Ilmu Komputer - S1'),
+('2013139', 'Rizqy Akbar Dinul Putra', '2020', 'Ilmu Komputer', 'Teknik Informatika - S1'),
 ('1102345', 'Sinta Laura', '2011', 'Pendidikan Matematika dan Pengetahuan Alam', 'Pendidikan Ilmu Komputer - S1'),
 ('1103456', 'Madun Ginanjar', '2011', 'Pendidikan Matematika dan Pengetahuan Alam', 'Pendidikan Ilmu Komputer - S1'),
 ('1201234', 'Zainal Abidin', '2009', 'Pendidikan Matematika dan Pengetahuan Alam', 'Pendidikan Ilmu Komputer - S1'),
