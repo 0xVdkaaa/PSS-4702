@@ -1,87 +1,88 @@
-from django.shortcuts import HttpResponse
+from django.http import JsonResponse, HttpResponse
+from django.core import serializers
+from django.db.models import Count, Max, Min, Avg
 from django.contrib.auth.models import User
-from django.db.models import Count, Min, Max, Avg
-from .models import Course, CourseMember
-import csv
-import os
-from django.conf import settings
+from .models import Course, CourseMember, CourseContent, Comment
 
-# --- FUNGSI TUGAS 3: IMPORT CSV ---
-def testing(request):
-    base_dir = settings.BASE_DIR
-    
-    # Import Data User
-    user_path = os.path.join(base_dir, 'user-data.csv')
-    if os.path.exists(user_path):
-        with open(user_path, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                if not User.objects.filter(email=row['email']).exists():
-                    User.objects.create_user(
-                        username=row['username'],
-                        email=row['email'],
-                        password=row['password']
-                    )
-    
-    # Import Data Course
-    course_path = os.path.join(base_dir, 'course-data.csv')
-    if os.path.exists(course_path):
-        with open(course_path, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                teacher = User.objects.filter(email=row['teacher_email']).first()
-                if teacher and not Course.objects.filter(name=row['name']).exists():
-                    Course.objects.create(
-                        name=row['name'],
-                        description=row['description'],
-                        price=row['price'],
-                        image=row['image'],
-                        teacher=teacher
-                    )
-
-    # Import Data Member
-    member_path = os.path.join(base_dir, 'member-data.csv')
-    if os.path.exists(member_path):
-        with open(member_path, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                course = Course.objects.filter(name=row['course_name']).first()
-                user = User.objects.filter(email=row['user_email']).first()
-                
-                if course and user and not CourseMember.objects.filter(course=course, user=user).exists():
-                    CourseMember.objects.create(
-                        course=course,
-                        user=user,
-                        roles=row['roles']
-                    )
-
-    return HttpResponse("Proses Import Data Selesai! Semua data dari CSV udah masuk ke database.")
-
-# --- FUNGSI TUGAS 4: RELASI DAN AGREGASI ---
-def course_list(request):
-    # Relasi dan Agregasi (Count)
-    courses = Course.objects.select_related('teacher').annotate(total_member=Count('members'))
-    
-    html = "<h1>Daftar Mata Kuliah (Relasi & Agregasi)</h1>"
-    html += "<table border='1' cellpadding='10' style='border-collapse: collapse;'>"
-    html += "<tr><th>Nama Kursus</th><th>Pengajar (Relasi)</th><th>Harga</th><th>Jumlah Siswa (Agregasi)</th></tr>"
-    
-    for c in courses:
-        html += f"<tr><td>{c.name}</td><td>{c.teacher.username}</td><td>Rp {c.price}</td><td>{c.total_member} Siswa</td></tr>"
-    
-    html += "</table>"
-    
-    # Agregasi Global (Min, Max, Avg)
-    stats = Course.objects.aggregate(
-        termurah=Min('price'),
-        termahal=Max('price'),
-        rata_rata=Avg('price')
+def courseStat(request):
+    courses = Course.objects.all()
+    stats = courses.aggregate(
+        max_price=Max('price'),
+        min_price=Min('price'),
+        avg_price=Avg('price')
     )
+    cheapest = Course.objects.filter(price=stats['min_price'])
+    expensive = Course.objects.filter(price=stats['max_price'])
     
-    html += "<h2>Statistik Harga Kursus</h2><ul>"
-    html += f"<li>Harga Termurah: Rp {stats['termurah']}</li>"
-    html += f"<li>Harga Termahal: Rp {stats['termahal']}</li>"
-    rata = int(stats['rata_rata']) if stats['rata_rata'] else 0
-    html += f"<li>Rata-rata Harga: Rp {rata}</li></ul>"
+    popular = Course.objects.annotate(member_count=Count('members')).order_by('-member_count')[:5]
+    unpopular = Course.objects.annotate(member_count=Count('members')).order_by('member_count')[:5]
 
-    return HttpResponse(html)
+    result = {
+        'course_count': len(courses),
+        'courses': stats,
+        'cheapest': serializers.serialize('python', cheapest),
+        'expensive': serializers.serialize('python', expensive),
+        'popular': serializers.serialize('python', popular),
+        'unpopular': serializers.serialize('python', unpopular)
+    }
+    return JsonResponse(result, safe=False)
+
+def userStat(request):
+    non_admins = User.objects.filter(is_superuser=False)
+    
+    users_with_courses = non_admins.annotate(course_count=Count('enrolled_courses')).filter(course_count__gt=0)
+    users_without_courses = non_admins.annotate(course_count=Count('enrolled_courses')).filter(course_count=0)
+    
+    avg_courses = non_admins.annotate(course_count=Count('enrolled_courses')).aggregate(Avg('course_count'))
+    
+    top_user = users_with_courses.order_by('-course_count')[:1]
+    top_user_data = [{'username': u.username, 'email': u.email, 'total_courses': u.course_count} for u in top_user]
+    
+    no_course_data = [{'username': u.username, 'email': u.email} for u in users_without_courses]
+
+    result = {
+        'total_non_admin_users': non_admins.count(),
+        'total_users_with_courses': users_with_courses.count(),
+        'total_users_without_courses': users_without_courses.count(),
+        'average_courses_per_user': avg_courses['course_count__avg'] or 0,
+        'top_user': top_user_data,
+        'users_no_courses': no_course_data
+    }
+    return JsonResponse(result, safe=False)
+
+def course_list(request):
+    return HttpResponse("Ini halaman daftar courses (masih dummy biar nggak error).")
+
+def home(request):
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <title>Dashboard e-LMS</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin-top: 10%; background-color: #f4f7f6; color: #333; }
+            h1 { color: #2c3e50; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+            .btn { display: block; width: 80%; padding: 15px; margin: 15px auto; text-decoration: none; color: white; background-color: #3498db; border-radius: 8px; font-size: 18px; font-weight: bold; transition: 0.3s; }
+            .btn:hover { background-color: #2980b9; }
+            .btn-admin { background-color: #27ae60; }
+            .btn-admin:hover { background-color: #2ecc71; }
+            .btn-silk { background-color: #9b59b6; }
+            .btn-silk:hover { background-color: #8e44ad; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Selamat Datang di e-LMS</h1>
+            <p>Pilih menu laporan tugas Pertemuan 7 di bawah ini:</p>
+            <a href="/admin/" target="_blank" class="btn btn-admin">⚙️ Halaman Django Admin</a>
+            <a href="/silk/" target="_blank" class="btn btn-silk">📊 Buka Dashboard Silk</a>
+            <a href="/course-stat/" target="_blank" class="btn">📚 Statistik Course (JSON)</a>
+            <a href="/user-stat/" target="_blank" class="btn">👥 Statistik User (JSON)</a>
+            
+        </div>
+    </body>
+    </html>
+    """
+    return HttpResponse(html_content)
