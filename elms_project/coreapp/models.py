@@ -48,3 +48,15 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Komentar {self.user.username} di {self.content.name}"
+
+class Mahasiswa(models.Model):
+    nim = models.CharField(max_length=20, unique=True)
+    nama = models.CharField(max_length=100)
+    angkatan = models.IntegerField()
+    fakultas = models.CharField(max_length=100)
+    prodi = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nama
+    class Meta:
+        verbose_name_plural = "Mahasiswa"

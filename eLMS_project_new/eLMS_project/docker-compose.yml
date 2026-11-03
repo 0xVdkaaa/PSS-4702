@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    # Command buat nge-run server Django lu
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      # Mapping folder lu ke container, biar lu ngoding di VSCode langsung ke-update
+      - .:/app
+    ports:
+      # Mapping port dari container ke localhost lu
+      - "8001:8000"
+    

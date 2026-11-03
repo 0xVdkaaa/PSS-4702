@@ -1,0 +1,108 @@
+--------- Controller.php
+<?php
+include_once("model/Model.php");
+class Controller {
+    public $model;
+    public function __construct()
+    {
+        $this->model = new Model();
+    }
+    public function invoke()
+    {
+        if (!isset($_GET['book']))
+        {
+            // no special book is requested, we'll show a list of all available books
+            $books = $this->model->getBookList();
+            include 'view/booklist.php';
+         }
+        else
+        {
+            // show the requested book
+            $book = $this->model->getBook($_GET['book']);
+            include 'view/viewbook.php';
+        }
+    }
+}
+?>
+
+------------ Book.php
+<?php
+class Book {
+    public $title;
+    public $author;
+    public $description;
+    public function __construct($title, $author,$description)
+    {
+        $this->title = $title;
+        $this->author = $author;
+        $this->description = $description;
+    }
+}
+?>
+
+----------- Model.php
+<?php
+include_once("model/Book.php");
+class Model {
+public function getBookList()
+{
+// here goes some hardcoded values to simulate the database
+return array(
+"Jungle Book" => new Book("Jungle Book", "R. Kipling", "A classic book."),
+"Moonwalker" => new Book("Moonwalker", "J. Walker", "Fiksi"),
+"PHP for Dummies" => new Book("PHP for Dummies", "Some Smart Guy", "Code"),
+"E-Commerce Industri" => new Book("E-Commerce Industri", "a71b", "Code"),
+"Aplikasi Android" => new Book("Aplikasi Android", "mrjj", "Pemrograman Bergerak")
+);
+}
+public function getBook($title)
+{
+// we use the previous function to get all the books
+// and then we return the requested one.
+// in a real life scenario this will be done through
+// a database select command
+$allBooks = $this->getBookList();
+return $allBooks[$title];
+}
+}
+?>
+
+----------- booklist.php
+<html>
+<head></head>
+<body>
+<table border='1'>
+<tbody>
+<tr><td>Title</td><td>Author</td><td>Description</td></tr>
+</tbody>
+<?php
+foreach ($books as $book) {
+echo '<tr><td><a href="index.php?book=' .$book->title . '">' . $book->title .
+'</a></td><td>' .
+$book->author . '</td><td>' . $book->description . '</td></tr>';
+}
+?>
+</table>
+</body>
+</html>
+
+--------- viewbook.php
+<html>
+<head></head>
+<body>
+<?php
+echo 'Title:' . $book->title . '<br/>';
+echo 'Author:' . $book->author . '<br/>';
+echo 'Description:' . $book->description . '<br/>';
+?>
+</body>
+</html>
+
+------------ index.php
+<?php
+// All interaction goes through the index and isforwarded
+// directly to the controller
+    include_once("controller/Controller.php");
+    $controller = new Controller();
+    $controller->invoke();
+?>

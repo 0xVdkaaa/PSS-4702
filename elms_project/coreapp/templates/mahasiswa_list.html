@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Data Mahasiswa MVC to Django</title>
+</head>
+<body>
+    <h2>Daftar Mahasiswa (Migrasi dari PHP MVC)</h2>
+    <table border="1" cellpadding="10">
+        <tr>
+            <th>NIM</th>
+            <th>Nama</th>
+            <th>Angkatan</th>
+            <th>Fakultas</th>
+            <th>Program Studi</th>
+        </tr>
+        {% for mhs in mahasiswa %}
+        <tr>
+            <td>{{ mhs.nim }}</td>
+            <td>{{ mhs.nama }}</td>
+            <td>{{ mhs.angkatan }}</td>
+            <td>{{ mhs.fakultas }}</td>
+            <td>{{ mhs.prodi }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Belum ada data mahasiswa.</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

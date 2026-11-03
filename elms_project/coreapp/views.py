@@ -3,6 +3,8 @@ from django.core import serializers
 from django.db.models import Count, Max, Min, Avg
 from django.contrib.auth.models import User
 from .models import Course, CourseMember, CourseContent, Comment
+from .models import Mahasiswa
+from django.shortcuts import render
 
 def courseStat(request):
     courses = Course.objects.all()
@@ -52,6 +54,10 @@ def userStat(request):
 
 def course_list(request):
     return HttpResponse("Ini halaman daftar courses (masih dummy biar nggak error).")
+
+def mahasiswa_list(request):
+    data_mahasiswa = Mahasiswa.objects.all() # Ini sama kayak "SELECT * FROM mahasiswa" di PHP
+    return render(request, 'mahasiswa_list.html', {'mahasiswa': data_mahasiswa})
 
 def home(request):
     html_content = """
