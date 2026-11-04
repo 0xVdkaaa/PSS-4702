@@ -1,9 +1,187 @@
-{% extends 'base.html' %}
-{% block title %}Beranda e-LMS{% endblock %}
-{% block content %}
-  <div class="text-center py-5">
-    <h1>Selamat Datang di e-LMS 🎓</h1>
-    <p class="lead">Platform pembelajaran daring berbasis Django.</p>
-    <a href="/courses/" class="btn btn-primary btn-lg">Lihat Mata Kuliah</a>
-  </div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eLMS Dashboard</title>
+    <!-- Import Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .hero-section {
+            padding: 60px 0;
+            text-align: center;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">🎓 eLMS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Beranda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'courses' %}">Mata Kuliah</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'mahasiswa_list' %}">Data Mahasiswa</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header / Hero Section -->
+    <div class="container hero-section">
+        <h1 class="display-4 fw-bold text-primary">Selamat datang di eLMS</h1>
+        <p class="lead text-muted">Platform manajemen pembelajaran daring yang terintegrasi.</p>
+    </div>
+
+    <!-- Menu Cards -->
+    <div class="container mb-4">
+        <div class="row g-4 justify-content-center">
+            
+            <!-- Card Admin -->
+            <div class="col-md-4">
+                <div class="card h-100 text-center p-4">
+                    <h1 class="display-1 text-success">⚙️</h1>
+                    <h4 class="mt-3">Django Admin</h4>
+                    <p class="text-muted">Kelola data user, course, dan akses sistem.</p>
+                    <a href="/admin/" class="btn btn-outline-success mt-auto">Buka Admin</a>
+                </div>
+            </div>
+
+            <!-- Card Mata Kuliah (Pengganti Silk) -->
+            <div class="col-md-4">
+                <div class="card h-100 text-center p-4">
+                    <h1 class="display-1 text-info">📚</h1>
+                    <h4 class="mt-3">Mata Kuliah</h4>
+                    <p class="text-muted">Lihat daftar lengkap course dan pengajar.</p>
+                    <a href="{% url 'courses' %}" class="btn btn-outline-info mt-auto">Lihat Matkul</a>
+                </div>
+            </div>
+
+            <!-- Card Mahasiswa -->
+            <div class="col-md-4">
+                <div class="card h-100 text-center p-4">
+                    <h1 class="display-1 text-warning">👨‍🎓</h1>
+                    <h4 class="mt-3">Data Mahasiswa</h4>
+                    <p class="text-muted">Lihat data mahasiswa dari migrasi MVC.</p>
+                    <a href="{% url 'mahasiswa_list' %}" class="btn btn-outline-warning mt-auto">Lihat Data</a>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Live Statistics via JSON API -->
+        <div class="row mt-5 justify-content-center">
+            <div class="col-md-12">
+                <h4 class="mb-3 text-secondary border-bottom pb-2">📈 Live System Statistics</h4>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="card p-4 shadow-sm border-start border-primary border-5">
+                    <h5 class="text-primary mb-3">Data Pengguna & Matkul</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Pengguna Terdaftar:</span>
+                        <span id="stat-users" class="fw-bold spinner-border spinner-border-sm text-primary"></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Total Mata Kuliah Aktif:</span>
+                        <span id="stat-courses" class="fw-bold spinner-border spinner-border-sm text-primary"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card p-4 shadow-sm border-start border-success border-5">
+                    <h5 class="text-success mb-3">Statistik Harga Course</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Harga Rata-rata:</span>
+                        <span id="stat-avg" class="fw-bold spinner-border spinner-border-sm text-success"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Harga Termurah:</span>
+                        <span id="stat-min" class="fw-bold spinner-border spinner-border-sm text-success"></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Harga Termahal:</span>
+                        <span id="stat-max" class="fw-bold spinner-border spinner-border-sm text-success"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol API JSON (Opsional, buat debug aja) -->
+        <div class="row mt-4 justify-content-center">
+            <div class="col-md-8 text-center">
+                <p class="small text-muted mb-2">Akses Endpoint Mentah:</p>
+                <a href="{% url 'courseStat' %}" class="btn btn-sm btn-outline-secondary me-2">Raw JSON Course</a>
+                <a href="{% url 'userStat' %}" class="btn btn-sm btn-outline-secondary">Raw JSON User</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script Fetch API buat narik data JSON otomatis -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            
+            // Format angka ke Rupiah
+            const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(angka);
+
+            // Fetch User Stats
+            fetch('/user-stat/')
+                .then(response => response.json())
+                .then(data => {
+                    let userEl = document.getElementById('stat-users');
+                    userEl.classList.remove('spinner-border', 'spinner-border-sm');
+                    userEl.innerHTML = data.total_users + ' User';
+                })
+                .catch(err => console.log(err));
+
+            // Fetch Course Stats
+            fetch('/course-stat/')
+                .then(response => response.json())
+                .then(data => {
+                    let courseEl = document.getElementById('stat-courses');
+                    courseEl.classList.remove('spinner-border', 'spinner-border-sm');
+                    courseEl.innerHTML = data.course_count + ' Matkul';
+
+                    let avgEl = document.getElementById('stat-avg');
+                    avgEl.classList.remove('spinner-border', 'spinner-border-sm');
+                    avgEl.innerHTML = data.courses.avg_price ? formatRp(data.courses.avg_price) : "Rp 0";
+
+                    let minEl = document.getElementById('stat-min');
+                    minEl.classList.remove('spinner-border', 'spinner-border-sm');
+                    minEl.innerHTML = data.courses.min_price ? formatRp(data.courses.min_price) : "Rp 0";
+
+                    let maxEl = document.getElementById('stat-max');
+                    maxEl.classList.remove('spinner-border', 'spinner-border-sm');
+                    maxEl.innerHTML = data.courses.max_price ? formatRp(data.courses.max_price) : "Rp 0";
+                })
+                .catch(err => console.log(err));
+        });
+    </script>
+</body>
+</html>

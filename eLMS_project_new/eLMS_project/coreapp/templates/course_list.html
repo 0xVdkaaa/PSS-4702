@@ -1,11 +1,40 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>List Mata Kuliah</h2>
-<ul>
-{% for c in courses %}
-  <li><a href="/course/{{ c.id }}/">{{ c.name }}</a></li>
-{% empty %}
-  <li>Tidak ada mata kuliah.</li>
-{% endfor %}
-</ul>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Mata Kuliah</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Daftar Mata Kuliah</h2>
+            <a href="{% url 'home' %}" class="btn btn-secondary">Kembali ke Dashboard</a>
+        </div>
+        
+        <div class="row">
+            {% for course in courses %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm h-100 border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{ course.name }}</h5>
+                        
+                        <!-- Ini yang ngebaca nama dari tabel Dosen -->
+                        <p class="card-text mb-1"><strong>Pengajar:</strong> {{ course.teacher.nama|default:"Belum ada dosen" }}</p>
+                        
+                        <p class="card-text text-success fw-bold">Harga: Rp {{ course.price }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center shadow-sm">
+                    Belum ada data mata kuliah. Silakan tambah di Admin Django.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

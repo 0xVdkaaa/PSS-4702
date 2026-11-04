@@ -1,70 +1,78 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class Dosen(models.Model):
+    nidn = models.CharField(max_length=20, unique=True)
+    nama = models.CharField(max_length=100)
+    email = models.EmailField(blank=True, null=True)
+    fakultas = models.CharField(max_length=100)
+    prodi = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = "Data Dosen"
+
+    def __str__(self):
+        return f"{self.nidn} - {self.nama}"
+
+class Mahasiswa(models.Model):
+    nim = models.CharField(max_length=20, unique=True)
+    nama = models.CharField(max_length=100)
+    angkatan = models.CharField(max_length=4)
+    fakultas = models.CharField(max_length=100)
+    prodi = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = "Data Mahasiswa"
+
+    def __str__(self):
+        return f"{self.nim} - {self.nama}"
+
 class Course(models.Model):
-    name = models.CharField("nama matkul", max_length=100)
-    description = models.TextField("deskripsi", default='-')
-    price = models.IntegerField("harga", default=10000)
-    image = models.ImageField("gambar", null=True, blank=True)
-    teacher = models.ForeignKey(User, verbose_name="pengajar", on_delete=models.RESTRICT)
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    price = models.IntegerField(default=0)
+    image = models.ImageField(upload_to='courses/', blank=True, null=True)
+    teacher = models.ForeignKey(Dosen, on_delete=models.CASCADE, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Mata Kuliah"
         verbose_name_plural = "Mata Kuliah"
 
-    def __str__(self) -> str:
-        return self.name + " : " + str(self.price)
-
-
-ROLE_OPTIONS = [('std', "Siswa"), ('ast', "Asisten") ]
+    def __str__(self):
+        return self.name
 
 class CourseMember(models.Model):
-    course_id = models.ForeignKey(Course, verbose_name="matkul", on_delete=models.RESTRICT)
-    user_id = models.ForeignKey(User, verbose_name="siswa", on_delete=models.RESTRICT)
-    roles = models.CharField("peran", max_length=3, choices=ROLE_OPTIONS, default='std')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Subscriber Matkul"
-        verbose_name_plural = "Subscriber Matkul"
-        unique_together = ('course_id', 'user_id')
+        verbose_name_plural = "Peserta Mata Kuliah"
 
-    def __str__(self) -> str:
-        return str(self.course_id) + " : " + str(self.user_id)
-
+    def __str__(self):
+        return f"{self.user.username} di {self.course.name}"
 
 class CourseContent(models.Model):
-    name = models.CharField("judul konten", max_length=200)
-    description = models.TextField("deskripsi", default='-')
-    video_url = models.CharField('URL Video', max_length=200, null=True, blank=True)
-    file_attachment = models.FileField("File", null=True, blank=True)
-    course_id = models.ForeignKey(Course, verbose_name="matkul", on_delete=models.RESTRICT)
-    parent_id = models.ForeignKey("self", verbose_name="induk", 
-                                on_delete=models.RESTRICT, null=True, blank=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='contents/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Konten Matkul"
-        verbose_name_plural = "Konten Matkul"
+        verbose_name_plural = "Materi Mata Kuliah"
 
-    def __str__(self) -> str:
-        return '[' + str(self.course_id) + "] " + self.name
-
+    def __str__(self):
+        return self.title
 
 class Comment(models.Model):
-    content_id = models.ForeignKey(CourseContent, verbose_name="konten", on_delete=models.CASCADE)
-    member_id = models.ForeignKey(CourseMember, verbose_name="pengguna", on_delete=models.CASCADE)
-    comment = models.TextField('komentar')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Komentar"
         verbose_name_plural = "Komentar"
 
-    def __str__(self) -> str:
-        return "Komen: " + self.content_id.name + "-" + self.member_id.user_id.username
+    def __str__(self):
+        return f"Komentar {self.user.username}"

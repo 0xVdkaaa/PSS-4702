@@ -1,90 +1,56 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.views.generic import ListView, DetailView
-from django.contrib import messages
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.core import serializers
+from django.db.models import Max, Min, Avg, Count
 from django.contrib.auth.models import User
-from .models import Course, CourseMember, CourseContent, Comment
+from .models import Course, Mahasiswa, CourseMember, CourseContent, Comment
 
-def core(request):
+# View buat halaman utama (Dashboard)
+def home(request):
+    # Kalau nama file template lu beda (misal index.html), tinggal ganti aja ya
     return render(request, 'core.html')
 
-def users(request):
-    myusers = User.objects.all()
-    context = {'myusers': myusers}
-    return render(request, 'all_users.html', context)
+# View buat data Mahasiswa
+def mahasiswa_list(request):
+    mahasiswa = Mahasiswa.objects.all()
+    return render(request, 'mahasiswa_list.html', {'mahasiswa': mahasiswa})
 
-def courses(request):
-    all_courses = Course.objects.all()
-    context = {'courses': all_courses}
-    return render(request, 'all_courses.html', context)
+# View buat daftar Course
+def course_list(request):
+    courses = Course.objects.all()
+    return render(request, 'course_list.html', {'courses': courses})
 
-class CourseListView(ListView):
-    model = Course
-    template_name = 'course_list.html'
-    context_object_name = 'courses'
-    ordering = ['-created_at']
-
-class CourseDetailView(DetailView):
-    model = Course
-    template_name = 'course_detail.html'
-    context_object_name = 'course'
-
-
-@login_required
-def join_course(request, pk):
-    course = get_object_or_404(Course, pk=pk)
-    member, created = CourseMember.objects.get_or_create(
-        course_id=course,
-        user_id=request.user,
-        defaults={'roles': 'std'}
+# View buat API statistik Course JSON
+def courseStat(request):
+    courses = Course.objects.all()
+    stats = courses.aggregate(
+        max_price=Max('price'),
+        min_price=Min('price'),
+        avg_price=Avg('price')
     )
-    if created:
-        messages.success(request, f"Kamu berhasil bergabung di {course.name}")
-    else:
-        messages.info(request, f"Kamu sudah terdaftar di {course.name}")
-    return redirect('course_detail', pk=pk)
+    
+    # Ambil course paling murah & mahal
+    cheapest = Course.objects.filter(price=stats['min_price']) if stats['min_price'] is not None else []
+    expensive = Course.objects.filter(price=stats['max_price']) if stats['max_price'] is not None else []
+    
+    # Ambil course paling populer & nggak populer (udah diganti jadi 'coursemember' biar nggak error)
+    popular = Course.objects.annotate(member_count=Count('coursemember')).order_by('-member_count')[:1]
+    unpopular = Course.objects.annotate(member_count=Count('coursemember')).order_by('member_count')[:1]
+    
+    result = {
+        'course_count': len(courses),
+        'courses': stats,
+        'cheapest': serializers.serialize('python', cheapest) if cheapest else [],
+        'expensive': serializers.serialize('python', expensive) if expensive else [],
+        'popular': serializers.serialize('python', popular),
+        'unpopular': serializers.serialize('python', unpopular)
+    }
+    return JsonResponse(result, safe=False)
 
-
-@login_required
-def course_content_list(request, course_id):
-    course = get_object_or_404(Course, id=course_id)
-    contents = CourseContent.objects.filter(course_id=course)
-    return render(request, 'course_content_list.html', {
-        'course': course,
-        'contents': contents
-    })
-
-
-@login_required
-def course_content_detail(request, content_id):
-    content = get_object_or_404(CourseContent, id=content_id)
-    comments = Comment.objects.filter(content_id=content)
-    return render(request, 'course_content_detail.html', {
-        'content': content,
-        'comments': comments
-    })
-
-
-@login_required
-def add_comment(request, content_id):
-    content = get_object_or_404(CourseContent, id=content_id)
-    member = CourseMember.objects.filter(course_id=content.course_id, user_id=request.user).first()
-
-    if not member:
-        messages.error(request, "Kamu belum tergabung di mata kuliah ini.")
-        return redirect('course_detail', pk=content.course_id.id)
-
-    if request.method == 'POST':
-        text = request.POST.get('comment')
-        if text:
-            Comment.objects.create(content_id=content, member_id=member, comment=text)
-            messages.success(request, "Komentar berhasil ditambahkan.")
-        return redirect('course_content_detail', content_id=content.id)
-
-    return render(request, 'add_comment.html', {'content': content})
-
-
-@login_required
-def my_courses(request):
-    memberships = CourseMember.objects.filter(user_id=request.user)
-    return render(request, 'my_courses.html', {'memberships': memberships})
+# View buat API statistik User JSON
+def userStat(request):
+    users = User.objects.all()
+    result = {
+        'total_users': users.count()
+    }
+    return JsonResponse(result, safe=False)
