@@ -3,184 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eLMS Dashboard</title>
-    <!-- Import Bootstrap 5 CSS -->
+    <title>Dashboard eLMS</title>
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome (Ikon) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .hero-section {
-            padding: 60px 0;
-            text-align: center;
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-        .card:hover {
+        body { background-color: #f8f9fa; }
+        .card-hover { transition: all 0.3s ease-in-out; }
+        .card-hover:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
         }
+        .stat-card { transition: transform 0.3s; }
+        .stat-card:hover { transform: scale(1.02); }
     </style>
 </head>
 <body>
-
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm sticky-top">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">🎓 eLMS</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">Beranda</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'courses' %}">Mata Kuliah</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'mahasiswa_list' %}">Data Mahasiswa</a>
-                    </li>
-                </ul>
+            <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+                <i class="fas fa-graduation-cap me-2"></i>eLMS
+            </a>
+            <div class="d-flex align-items-center ms-auto">
+                {% if is_guest %}
+                    <a href="{% url 'login' %}" class="btn btn-light btn-sm fw-bold px-4 text-primary shadow-sm">
+                        <i class="fas fa-sign-in-alt me-1"></i> Login
+                    </a>
+                {% else %}
+                    <span class="me-3 fw-semibold text-white">
+                        {% if is_dosen %}
+                            <span class="badge bg-warning text-dark me-2"><i class="fas fa-chalkboard-teacher me-1"></i> Pengajar</span>
+                        {% elif is_mahasiswa %}
+                            <span class="badge bg-info text-dark me-2"><i class="fas fa-user-graduate me-1"></i> Mahasiswa</span>
+                        {% else %}
+                            <span class="badge bg-secondary text-white me-2"><i class="fas fa-user me-1"></i> User Umum</span>
+                        {% endif %}
+                        {{ request.user.username }}
+                    </span>
+                    <form action="{% url 'logout' %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger shadow-sm">
+                            <i class="fas fa-sign-out-alt"></i> Keluar
+                        </button>
+                    </form>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- Header / Hero Section -->
-    <div class="container hero-section">
-        <h1 class="display-4 fw-bold text-primary">Selamat datang di eLMS</h1>
-        <p class="lead text-muted">Platform manajemen pembelajaran daring yang terintegrasi.</p>
-    </div>
+    <div class="container mt-4 pb-5">
+        {% if not is_guest %}
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center" role="alert">
+            <i class="fas fa-check-circle fs-4 me-3"></i>
+            <div>Selamat datang kembali, <strong>{{ request.user.username }}</strong>. Semangat belajarnya!</div>
+        </div>
+        {% endif %}
 
-    <!-- Menu Cards -->
-    <div class="container mb-4">
-        <div class="row g-4 justify-content-center">
-            
-            <!-- Card Admin -->
-            <div class="col-md-4">
-                <div class="card h-100 text-center p-4">
-                    <h1 class="display-1 text-success">⚙️</h1>
-                    <h4 class="mt-3">Django Admin</h4>
-                    <p class="text-muted">Kelola data user, course, dan akses sistem.</p>
-                    <a href="/admin/" class="btn btn-outline-success mt-auto">Buka Admin</a>
-                </div>
+        <div class="d-flex justify-content-between align-items-end mt-4 mb-4">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">
+                    {% if is_guest %} Katalog eLMS {% else %} Halo, {{ request.user.username }} {% endif %}
+                </h3>
+                <p class="text-secondary mb-0">
+                    {% if is_guest %} Eksplorasi berbagai kelas unggulan kami.
+                    {% elif is_dosen %} Ringkasan mata kuliah yang Anda ampu.
+                    {% elif is_mahasiswa %} Ringkasan aktivitas akademik Anda.
+                    {% else %} Daftar seluruh mata kuliah.
+                    {% endif %}
+                </p>
             </div>
-
-            <!-- Card Mata Kuliah (Pengganti Silk) -->
-            <div class="col-md-4">
-                <div class="card h-100 text-center p-4">
-                    <h1 class="display-1 text-info">📚</h1>
-                    <h4 class="mt-3">Mata Kuliah</h4>
-                    <p class="text-muted">Lihat daftar lengkap course dan pengajar.</p>
-                    <a href="{% url 'courses' %}" class="btn btn-outline-info mt-auto">Lihat Matkul</a>
-                </div>
-            </div>
-
-            <!-- Card Mahasiswa -->
-            <div class="col-md-4">
-                <div class="card h-100 text-center p-4">
-                    <h1 class="display-1 text-warning">👨‍🎓</h1>
-                    <h4 class="mt-3">Data Mahasiswa</h4>
-                    <p class="text-muted">Lihat data mahasiswa dari migrasi MVC.</p>
-                    <a href="{% url 'mahasiswa_list' %}" class="btn btn-outline-warning mt-auto">Lihat Data</a>
-                </div>
-            </div>
-
         </div>
 
-        <!-- Live Statistics via JSON API -->
-        <div class="row mt-5 justify-content-center">
-            <div class="col-md-12">
-                <h4 class="mb-3 text-secondary border-bottom pb-2">📈 Live System Statistics</h4>
+        <!-- Kartu Statistik Utama -->
+        <div class="row mt-2">
+            <!-- Kartu 1 -->
+            <div class="col-md-4 mb-3">
+                <div class="card stat-card bg-primary bg-gradient text-white border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small text-uppercase fw-bold">
+                                {% if is_guest %} Tersedia {% elif is_dosen %} Diampu {% else %} Diikuti {% endif %}
+                            </p>
+                            <h2 class="fw-bold mb-0">{{ total_course }} <span class="fs-6 fw-normal">Kelas</span></h2>
+                        </div>
+                        <i class="fas fa-book-open fa-3x opacity-50"></i>
+                    </div>
+                </div>
             </div>
             
-            <div class="col-md-6 mb-3">
-                <div class="card p-4 shadow-sm border-start border-primary border-5">
-                    <h5 class="text-primary mb-3">Data Pengguna & Matkul</h5>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total Pengguna Terdaftar:</span>
-                        <span id="stat-users" class="fw-bold spinner-border spinner-border-sm text-primary"></span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Total Mata Kuliah Aktif:</span>
-                        <span id="stat-courses" class="fw-bold spinner-border spinner-border-sm text-primary"></span>
+            <!-- Kartu 2 -->
+            <div class="col-md-4 mb-3">
+                <div class="card stat-card bg-success bg-gradient text-white border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small text-uppercase fw-bold">
+                                {% if is_guest %} Pengguna Aktif {% elif is_dosen %} Siswa Anda {% elif is_mahasiswa %} Rekan Siswa {% else %} Total Pengguna {% endif %}
+                            </p>
+                            <h2 class="fw-bold mb-0">
+                                {% if is_mahasiswa %} - {% elif is_dosen %} {{ total_siswa }} {% else %} {{ total_user }} {% endif %} 
+                                <span class="fs-6 fw-normal">Orang</span>
+                            </h2>
+                        </div>
+                        <i class="fas fa-users fa-3x opacity-50"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6 mb-3">
-                <div class="card p-4 shadow-sm border-start border-success border-5">
-                    <h5 class="text-success mb-3">Statistik Harga Course</h5>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Harga Rata-rata:</span>
-                        <span id="stat-avg" class="fw-bold spinner-border spinner-border-sm text-success"></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Harga Termurah:</span>
-                        <span id="stat-min" class="fw-bold spinner-border spinner-border-sm text-success"></span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Harga Termahal:</span>
-                        <span id="stat-max" class="fw-bold spinner-border spinner-border-sm text-success"></span>
+            <!-- Kartu 3 -->
+            <div class="col-md-4 mb-3">
+                <div class="card stat-card bg-warning bg-gradient text-dark border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small text-uppercase fw-bold">Total Modul</p>
+                            <h2 class="fw-bold mb-0">{{ total_modul }} <span class="fs-6 fw-normal">Konten</span></h2>
+                        </div>
+                        <i class="fas fa-file-alt fa-3x opacity-50"></i>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tombol API JSON (Opsional, buat debug aja) -->
-        <div class="row mt-4 justify-content-center">
-            <div class="col-md-8 text-center">
-                <p class="small text-muted mb-2">Akses Endpoint Mentah:</p>
-                <a href="{% url 'courseStat' %}" class="btn btn-sm btn-outline-secondary me-2">Raw JSON Course</a>
-                <a href="{% url 'userStat' %}" class="btn btn-sm btn-outline-secondary">Raw JSON User</a>
+        <!-- Kartu Grafik Statistik Live API -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-chart-bar text-primary me-2"></i>Statistik Peminat Mata Kuliah</h5>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="courseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Daftar Kelas -->
+        <div class="d-flex align-items-center mt-5 mb-4">
+            <h4 class="fw-bold mb-0 text-dark">
+                {% if is_guest %} <i class="fas fa-list me-2 text-primary"></i> Daftar Mata Kuliah
+                {% elif is_dosen %} <i class="fas fa-chalkboard text-primary me-2"></i> Kelas Saya
+                {% else %} <i class="fas fa-book-reader text-primary me-2"></i> Kelas Anda {% endif %}
+            </h4>
+        </div>
+        
+        <div class="row">
+            {% for course in courses %}
+            <div class="col-md-4 mb-4">
+                <div class="card card-hover border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                    <!-- Cover Image Mata Kuliah -->
+                    {% if course.image %}
+                        <img src="{{ course.image.url }}" class="card-img-top" alt="{{ course.name }}" style="height: 160px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-secondary bg-gradient d-flex align-items-center justify-content-center" style="height: 160px;">
+                            <i class="fas fa-image fa-3x text-white opacity-25"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold text-dark mb-0">{{ course.name }}</h5>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle me-1">
+                                {% if is_guest %} Katalog {% elif is_dosen %} Mengajar {% else %} Terdaftar {% endif %}
+                            </span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">
+                                <i class="fas fa-tag me-1"></i> Rp {{ course.price }}
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-4">{{ course.description|default:"Belum ada deskripsi untuk kelas ini."|truncatechars:80 }}</p>
+                        
+                        <div class="d-flex align-items-center mt-auto pt-3 border-top">
+                            <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-user-tie text-secondary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold text-dark fs-6">{{ course.teacher.nama|default:"Admin/Belum diatur" }}</p>
+                                <p class="mb-0 text-muted" style="font-size: 0.75rem;">Pengajar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-folder-open fa-4x text-muted opacity-25 mb-3"></i>
+                <h5 class="text-muted">Belum ada mata kuliah yang tersedia.</h5>
+            </div>
+            {% endfor %}
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Script Fetch API buat narik data JSON otomatis -->
+    <!-- Script Fetch API & Render Grafik -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            
-            // Format angka ke Rupiah
-            const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(angka);
-
-            // Fetch User Stats
-            fetch('/user-stat/')
+            fetch('/api/course-stat/')
                 .then(response => response.json())
                 .then(data => {
-                    let userEl = document.getElementById('stat-users');
-                    userEl.classList.remove('spinner-border', 'spinner-border-sm');
-                    userEl.innerHTML = data.total_users + ' User';
+                    const ctx = document.getElementById('courseChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar', 
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: 'Jumlah Mahasiswa',
+                                data: data.data,
+                                backgroundColor: 'rgba(13, 110, 253, 0.85)',
+                                borderColor: 'rgba(13, 110, 253, 1)',
+                                borderWidth: 0,
+                                borderRadius: 6,
+                                barPercentage: 0.6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 },
+                                    grid: { borderDash: [5, 5] }
+                                },
+                                x: {
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
                 })
-                .catch(err => console.log(err));
-
-            // Fetch Course Stats
-            fetch('/course-stat/')
-                .then(response => response.json())
-                .then(data => {
-                    let courseEl = document.getElementById('stat-courses');
-                    courseEl.classList.remove('spinner-border', 'spinner-border-sm');
-                    courseEl.innerHTML = data.course_count + ' Matkul';
-
-                    let avgEl = document.getElementById('stat-avg');
-                    avgEl.classList.remove('spinner-border', 'spinner-border-sm');
-                    avgEl.innerHTML = data.courses.avg_price ? formatRp(data.courses.avg_price) : "Rp 0";
-
-                    let minEl = document.getElementById('stat-min');
-                    minEl.classList.remove('spinner-border', 'spinner-border-sm');
-                    minEl.innerHTML = data.courses.min_price ? formatRp(data.courses.min_price) : "Rp 0";
-
-                    let maxEl = document.getElementById('stat-max');
-                    maxEl.classList.remove('spinner-border', 'spinner-border-sm');
-                    maxEl.innerHTML = data.courses.max_price ? formatRp(data.courses.max_price) : "Rp 0";
-                })
-                .catch(err => console.log(err));
+                .catch(error => console.error('Error fetching data:', error));
         });
     </script>
 </body>

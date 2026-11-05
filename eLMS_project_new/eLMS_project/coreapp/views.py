@@ -1,56 +1,80 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.core import serializers
-from django.db.models import Max, Min, Avg, Count
+from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from .models import Course, Mahasiswa, CourseMember, CourseContent, Comment
+from django.http import JsonResponse
+from django.db.models import Count
+from .models import Course, CourseMember, CourseContent
 
-# View buat halaman utama (Dashboard)
 def home(request):
-    # Kalau nama file template lu beda (misal index.html), tinggal ganti aja ya
-    return render(request, 'core.html')
+    # --- 1. TAMPILAN GUEST (BELUM LOGIN) ---
+    if not request.user.is_authenticated:
+        # OPTIMASI ORM: Pake select_related('teacher')
+        courses = Course.objects.select_related('teacher').all()
+        context = {
+            'courses': courses,
+            'total_course': courses.count(),
+            'total_user': User.objects.count(),
+            'total_modul': CourseContent.objects.count(),
+            'is_guest': True,
+        }
+        return render(request, 'core.html', context)
 
-# View buat data Mahasiswa
-def mahasiswa_list(request):
-    mahasiswa = Mahasiswa.objects.all()
-    return render(request, 'mahasiswa_list.html', {'mahasiswa': mahasiswa})
+    # --- 2. KALAU ADMIN (SUPERUSER) TENDANG KE DATABASE ---
+    if request.user.is_superuser:
+        return redirect('/admin/')
 
-# View buat daftar Course
-def course_list(request):
-    courses = Course.objects.all()
-    return render(request, 'course_list.html', {'courses': courses})
+    # --- 3. CEK ROLE USER (DOSEN / MAHASISWA) ---
+    is_dosen = request.user.groups.filter(name='Dosen').exists()
+    is_mahasiswa = request.user.groups.filter(name='Mahasiswa').exists()
+    
+    courses = []
+    total_course = 0
+    total_modul = 0
+    total_siswa = 0
 
-# View buat API statistik Course JSON
-def courseStat(request):
-    courses = Course.objects.all()
-    stats = courses.aggregate(
-        max_price=Max('price'),
-        min_price=Min('price'),
-        avg_price=Avg('price')
-    )
-    
-    # Ambil course paling murah & mahal
-    cheapest = Course.objects.filter(price=stats['min_price']) if stats['min_price'] is not None else []
-    expensive = Course.objects.filter(price=stats['max_price']) if stats['max_price'] is not None else []
-    
-    # Ambil course paling populer & nggak populer (udah diganti jadi 'coursemember' biar nggak error)
-    popular = Course.objects.annotate(member_count=Count('coursemember')).order_by('-member_count')[:1]
-    unpopular = Course.objects.annotate(member_count=Count('coursemember')).order_by('member_count')[:1]
-    
-    result = {
-        'course_count': len(courses),
-        'courses': stats,
-        'cheapest': serializers.serialize('python', cheapest) if cheapest else [],
-        'expensive': serializers.serialize('python', expensive) if expensive else [],
-        'popular': serializers.serialize('python', popular),
-        'unpopular': serializers.serialize('python', unpopular)
+    if is_dosen:
+        # DOSEN: Pake select_related('teacher')
+        courses = Course.objects.select_related('teacher').filter(teacher__email=request.user.email)
+        total_course = courses.count()
+        total_modul = CourseContent.objects.filter(course__in=courses).count()
+        total_siswa = CourseMember.objects.filter(course__in=courses).count()
+        
+    elif is_mahasiswa:
+        # MAHASISWA: Pake select_related('course__teacher')
+        enrollments = CourseMember.objects.select_related('course__teacher').filter(user=request.user)
+        courses = [e.course for e in enrollments]
+        total_course = len(courses)
+        if courses:
+            total_modul = CourseContent.objects.filter(course__in=courses).count()
+        
+    else:
+        # DEFAULT (User Umum Terdaftar): Pake select_related('teacher')
+        courses = Course.objects.select_related('teacher').all()
+        total_course = courses.count()
+        total_modul = CourseContent.objects.count()
+
+    context = {
+        'courses': courses,
+        'total_course': total_course,
+        'total_modul': total_modul,
+        'total_siswa': total_siswa,
+        'total_user': User.objects.count(),
+        'is_dosen': is_dosen,
+        'is_mahasiswa': is_mahasiswa,
+        'is_guest': False,
     }
-    return JsonResponse(result, safe=False)
+    return render(request, 'core.html', context)
 
-# View buat API statistik User JSON
-def userStat(request):
-    users = User.objects.all()
-    result = {
-        'total_users': users.count()
-    }
-    return JsonResponse(result, safe=False)
+# --- FUNGSI API BUAT GRAFIK CHART.JS ---
+def course_stat_api(request):
+    courses = Course.objects.annotate(total_siswa=Count('coursemember'))
+    labels = []
+    data = []
+    
+    for c in courses:
+        labels.append(c.name)
+        data.append(c.total_siswa)
+        
+    return JsonResponse({
+        'labels': labels,
+        'data': data
+    })
