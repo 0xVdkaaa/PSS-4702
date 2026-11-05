@@ -1,11 +1,60 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>Konten: {{ course.name }}</h2>
-<ul>
-  {% for cont in contents %}
-    <li><a href="/content/{{ cont.id }}/">{{ cont.name }}</a></li>
-  {% empty %}
-    <li>Tidak ada konten.</li>
-  {% endfor %}
-</ul>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Materi - {{ course.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm mb-5">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'course_detail' course.id %}">
+                <i class="fas fa-arrow-left me-2"></i> Batal / Kembali
+            </a>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <h3 class="fw-bold text-dark"><i class="fas fa-file-upload text-primary me-2"></i>Upload Materi Modul</h3>
+                            <p class="text-muted">Mata Kuliah: <strong>{{ course.name }}</strong></p>
+                        </div>
+                        
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Judul Modul / Materi <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control" placeholder="Contoh: Pertemuan 1 - Konsep Dasar" required>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Deskripsi Materi</label>
+                                <textarea name="description" class="form-control" rows="4" placeholder="Tuliskan ringkasan atau instruksi materi ini..."></textarea>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">File Lampiran (Opsional)</label>
+                                <input type="file" name="file" class="form-control">
+                                <div class="form-text">Format yang didukung: PDF, DOCX, PPTX, atau Gambar.</div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                                <i class="fas fa-save me-2"></i> Simpan & Upload Materi
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
