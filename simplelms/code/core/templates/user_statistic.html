@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>Statistik User</title></head>
+<body>
+  <h1>Statistik User</h1>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <tr><th>Username</th><th>Email</th><th>Course Diikuti</th><th>Komentar</th></tr>
+    {% for u in users %}
+    <tr><td>{{ u.username }}</td><td>{{ u.email }}</td>
+        <td>{{ u.jumlah_course_diikuti }}</td><td>{{ u.jumlah_komentar }}</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

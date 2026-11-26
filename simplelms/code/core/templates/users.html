@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><title>Daftar User</title></head>
+<body>
+  <h1>Daftar User{% if keyword %} - pencarian: "{{ keyword }}"{% endif %}</h1>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <tr><th>ID</th><th>Username</th><th>Email</th></tr>
+    {% for user in users %}
+    <tr><td>{{ user.id }}</td><td>{{ user.username }}</td><td>{{ user.email }}</td></tr>
+    {% empty %}
+    <tr><td colspan="3">Tidak ada data user</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
